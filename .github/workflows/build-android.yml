@@ -50,6 +50,15 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_URL: https://gracie-backend.onrender.com
 
+      - name: Add package attribute to AndroidManifest
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          echo "=== Manifest before ==="
+          cat "$MANIFEST"
+          sed -i 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android"|<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.anchoredbygrace.gracie"|' "$MANIFEST"
+          echo "=== Manifest after ==="
+          cat "$MANIFEST"
+
       - name: Fix Gradle wrapper version
         run: |
           PROPS=android/gradle/wrapper/gradle-wrapper.properties
