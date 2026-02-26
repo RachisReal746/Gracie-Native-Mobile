@@ -1,12 +1,11 @@
 {
   "expo": {
-    "name": "gracie-native-mobile",
-    "slug": "gracie-native-mobile",
+    "name": "Gracie",
+    "slug": "gracie",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "scheme": "gracie-mobile",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -15,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anchoredbygrace.gracie"
+      "bundleIdentifier": "com.anchoredbygrace.gracie",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,9 +26,9 @@
       },
       "package": "com.anchoredbygrace.gracie",
       "permissions": [
+        "INTERNET",
         "INTERNET"
-      ],
-      "usesCleartextTraffic": true
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -34,6 +36,19 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "32e82fed-6a3c-418c-aad7-f4228d70c472"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/32e82fed-6a3c-418c-aad7-f4228d70c472"
+    },
+    "owner": "rachisreal777"
   }
 }
