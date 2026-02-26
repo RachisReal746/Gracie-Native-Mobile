@@ -52,8 +52,12 @@ jobs:
 
       - name: Fix Gradle wrapper version
         run: |
-          sed -i 's|gradle-[0-9.]*-bin\.zip|gradle-8.13-bin.zip|g' \
-            android/gradle/wrapper/gradle-wrapper.properties
+          PROPS=android/gradle/wrapper/gradle-wrapper.properties
+          echo "=== Before fix ==="
+          cat "$PROPS"
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-bin.zip|' "$PROPS"
+          echo "=== After fix ==="
+          cat "$PROPS"
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
