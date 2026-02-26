@@ -50,14 +50,42 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_URL: https://gracie-backend.onrender.com
 
-      - name: Add package attribute to AndroidManifest
+      - name: Pre-generate autolinking config with packageName
         run: |
-          MANIFEST=android/app/src/main/AndroidManifest.xml
-          echo "=== Manifest before ==="
-          cat "$MANIFEST"
-          sed -i 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android"|<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.anchoredbygrace.gracie"|' "$MANIFEST"
-          echo "=== Manifest after ==="
-          cat "$MANIFEST"
+          mkdir -p android/build/generated/autolinking/
+
+          # Run CLI to get full dependency list (for proper package autolinking)
+          npx --yes @react-native-community/cli@15 config > /tmp/rn-config-raw.json 2>/tmp/rn-config-err.txt
+          echo "CLI exit: $?"
+          echo "=== CLI stderr ==="
+          cat /tmp/rn-config-err.txt || true
+
+          # Patch packageName into the config and save to Gradle cache location
+          node -e "
+          const fs = require('fs');
+          let config = {};
+          try {
+            config = JSON.parse(fs.readFileSync('/tmp/rn-config-raw.json', 'utf8'));
+            console.log('Parsed CLI config, deps:', Object.keys(config.dependencies || {}).length);
+          } catch(e) {
+            console.log('CLI config parse failed:', e.message);
+          }
+          if (!config.project) config.project = {};
+          if (!config.project.android) config.project.android = {};
+          config.project.android.packageName = 'com.anchoredbygrace.gracie';
+          if (!config.dependencies) config.dependencies = {};
+          const out = 'android/build/generated/autolinking/autolinking.json';
+          fs.writeFileSync(out, JSON.stringify(config, null, 2));
+          console.log('Written autolinking.json, packageName:', config.project.android.packageName);
+          "
+
+          # Create SHA cache files so settings plugin skips re-running the CLI
+          for lockfile in package-lock.json package.json react-native.config.js; do
+            if [ -f "$lockfile" ]; then
+              sha256sum "$lockfile" | awk '{print $1}' > "android/build/generated/autolinking/${lockfile}.sha"
+              echo "SHA cached for $lockfile"
+            fi
+          done
 
       - name: Fix Gradle wrapper version
         run: |
