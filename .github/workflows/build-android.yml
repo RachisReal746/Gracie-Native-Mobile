@@ -79,13 +79,17 @@ jobs:
           console.log('Written autolinking.json, packageName:', config.project.android.packageName);
           "
 
-          # Create SHA cache files so settings plugin skips re-running the CLI
+          # Create SHA cache files WITHOUT trailing newline (must match Java's shaFile.writeText)
           for lockfile in package-lock.json package.json react-native.config.js; do
             if [ -f "$lockfile" ]; then
-              sha256sum "$lockfile" | awk '{print $1}' > "android/build/generated/autolinking/${lockfile}.sha"
-              echo "SHA cached for $lockfile"
+              sha=$(sha256sum "$lockfile" | awk '{print $1}')
+              printf "%s" "$sha" > "android/build/generated/autolinking/${lockfile}.sha"
+              echo "SHA cached for $lockfile: $sha"
+              echo "File size: $(wc -c < "android/build/generated/autolinking/${lockfile}.sha") bytes (should be 64)"
             fi
           done
+          echo "=== autolinking dir contents ==="
+          ls -la android/build/generated/autolinking/
 
       - name: Fix Gradle wrapper version
         run: |
