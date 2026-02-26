@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 18.0.3",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "ORG_GRADLE_PROJECT_newArchEnabled": "true"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://gracie-backend.onrender.com",
+        "NODE_ENV": "production",
+        "ORG_GRADLE_PROJECT_newArchEnabled": "true"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "ORG_GRADLE_PROJECT_newArchEnabled": "true"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

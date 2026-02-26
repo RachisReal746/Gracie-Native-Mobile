@@ -1,0 +1,363 @@
+<!-- Gracie Chat Widget - Paste this into B12 Custom Footer Script -->
+<style>
+    #gracie-toggle {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #53ABB5;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(83, 171, 181, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: transform .2s, box-shadow .2s
+    }
+
+    #gracie-toggle:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 24px rgba(83, 171, 181, 0.5)
+    }
+
+    #gracie-toggle svg {
+        width: 28px;
+        height: 28px;
+        fill: white
+    }
+
+    #gracie-window {
+        position: fixed;
+        bottom: 96px;
+        right: 24px;
+        width: 360px;
+        max-height: 520px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 9998;
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+        pointer-events: none;
+        transition: opacity .25s, transform .25s;
+        font-family: 'Questrial', 'Segoe UI', sans-serif
+    }
+
+    #gracie-window.open {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        pointer-events: all
+    }
+
+    #gracie-header {
+        background: #53ABB5;
+        padding: 14px 16px
+    }
+
+    #gracie-header h3 {
+        color: white;
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0
+    }
+
+    #gracie-header p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 11px;
+        margin: 2px 0 0
+    }
+
+    #gracie-login {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px
+    }
+
+    #gracie-login p {
+        font-size: 13px;
+        color: #555;
+        text-align: center;
+        line-height: 1.5;
+        margin: 0
+    }
+
+    #gracie-login input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box
+    }
+
+    #gracie-login input:focus {
+        border-color: #53ABB5
+    }
+
+    #gracie-login button {
+        width: 100%;
+        padding: 11px;
+        background: #53ABB5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer
+    }
+
+    #gracie-login button:hover {
+        background: #3d8f98
+    }
+
+    #gracie-login .gerr {
+        color: #e53e3e;
+        font-size: 12px;
+        text-align: center
+    }
+
+    #gracie-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 200px;
+        max-height: 340px
+    }
+
+    .gmsg {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 14px;
+        font-size: 13px;
+        line-height: 1.5;
+        word-wrap: break-word
+    }
+
+    .gmsg.user {
+        background: #53ABB5;
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px
+    }
+
+    .gmsg.gracie {
+        background: #f0f4f5;
+        color: #333;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px
+    }
+
+    #gracie-input-area {
+        padding: 12px;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 8px
+    }
+
+    #gracie-input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        font-size: 13px;
+        outline: none;
+        resize: none;
+        font-family: inherit
+    }
+
+    #gracie-input:focus {
+        border-color: #53ABB5
+    }
+
+    #gracie-send {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #53ABB5;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0
+    }
+
+    #gracie-send:hover {
+        background: #3d8f98
+    }
+
+    #gracie-send svg {
+        width: 18px;
+        height: 18px;
+        fill: white
+    }
+
+    #gracie-signout {
+        margin: 0 12px 12px;
+        padding: 6px;
+        background: none;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 11px;
+        color: #999;
+        cursor: pointer;
+        width: calc(100% - 24px)
+    }
+
+    #gracie-signout:hover {
+        color: #53ABB5;
+        border-color: #53ABB5
+    }
+
+    @media(max-width:420px) {
+        #gracie-window {
+            width: calc(100vw - 32px);
+            right: 16px
+        }
+    }
+</style>
+
+<button id="gracie-toggle" onclick="gracieToggle()" aria-label="Chat with Gracie">
+    <svg viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+    </svg>
+</button>
+
+<div id="gracie-window">
+    <div id="gracie-header">
+        <h3>Chat with Gracie</h3>
+        <p>Your recovery support companion</p>
+    </div>
+
+    <div id="gracie-login">
+        <p>Sign in with your Gracie account to chat and keep your history across web &amp; app.</p>
+        <input type="email" id="g-email" placeholder="Email address" />
+        <input type="password" id="g-pass" placeholder="Password" />
+        <button onclick="gracieLogin()">Sign In</button>
+        <div class="gerr" id="g-err"></div>
+    </div>
+
+    <div id="gracie-chat" style="display:none;flex-direction:column;flex:1">
+        <div id="gracie-messages"></div>
+        <div id="gracie-input-area">
+            <textarea id="gracie-input" placeholder="Type a message..." rows="1"
+                onkeydown="gracieKey(event)"></textarea>
+            <button id="gracie-send" onclick="gracieSend()" aria-label="Send">
+                <svg viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+            </button>
+        </div>
+        <button id="gracie-signout" onclick="gracieLogout()">Sign out</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+        // ── IMPORTANT: Replace with your Railway URL after deployment ──
+        var API = 'REPLACE_WITH_RAILWAY_URL';
+
+        var user = null, sid = null;
+
+        // Restore session on page load
+        try {
+            var s = localStorage.getItem('gracie_web_user');
+            if (s) { user = JSON.parse(s); showChat(); loadHistory(); }
+        } catch (e) { }
+
+        window.gracieToggle = function () {
+            document.getElementById('gracie-window').classList.toggle('open');
+        };
+
+        window.gracieLogin = async function () {
+            var email = document.getElementById('g-email').value.trim();
+            var pass = document.getElementById('g-pass').value;
+            var err = document.getElementById('g-err');
+            err.textContent = '';
+            if (!email || !pass) { err.textContent = 'Please enter your email and password.'; return; }
+            try {
+                var r = await fetch(API + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) });
+                var d = await r.json();
+                if (d.success && d.user) { user = d.user; localStorage.setItem('gracie_web_user', JSON.stringify(user)); showChat(); loadHistory(); }
+                else { err.textContent = d.error || 'Login failed. Please try again.'; }
+            } catch (e) { err.textContent = 'Could not connect. Please try again later.'; }
+        };
+
+        window.gracieLogout = function () {
+            user = null; sid = null;
+            localStorage.removeItem('gracie_web_user');
+            document.getElementById('gracie-chat').style.display = 'none';
+            document.getElementById('gracie-login').style.display = 'flex';
+            document.getElementById('gracie-messages').innerHTML = '';
+        };
+
+        function showChat() {
+            document.getElementById('gracie-login').style.display = 'none';
+            document.getElementById('gracie-chat').style.display = 'flex';
+        }
+
+        async function loadHistory() {
+            if (!user) return;
+            try {
+                var r = await fetch(API + '/api/chat/history/' + user.id);
+                var d = await r.json();
+                var msgs = document.getElementById('gracie-messages');
+                msgs.innerHTML = '';
+                if (d.messages && d.messages.length > 0) {
+                    d.messages.slice(-20).forEach(function (m) {
+                        addMsg(m.role === 'user' ? 'user' : 'gracie', m.content);
+                        if (m.session_id) sid = m.session_id;
+                    });
+                } else {
+                    addMsg('gracie', 'Hi ' + (user.name || 'there') + '! I\'m Gracie, your recovery support companion. How are you feeling today?');
+                }
+            } catch (e) { addMsg('gracie', "Hi! I'm Gracie. How can I support you today?"); }
+        }
+
+        window.gracieSend = async function () {
+            var inp = document.getElementById('gracie-input');
+            var txt = inp.value.trim();
+            if (!txt || !user) return;
+            inp.value = ''; inp.style.height = 'auto';
+            addMsg('user', txt);
+            var typing = addMsg('gracie', '...');
+            try {
+                var r = await fetch(API + '/api/chat/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: txt, user_id: user.id, session_id: sid || undefined }) });
+                var d = await r.json();
+                typing.remove();
+                if (d.success) { sid = d.session_id; addMsg('gracie', d.response); }
+                else { addMsg('gracie', "I'm sorry, I had trouble responding. Please try again."); }
+            } catch (e) { typing.remove(); addMsg('gracie', "I'm having trouble connecting right now. Please try again shortly."); }
+        };
+
+        window.gracieKey = function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); gracieSend(); }
+        };
+
+        function addMsg(role, text) {
+            var msgs = document.getElementById('gracie-messages');
+            var el = document.createElement('div');
+            el.className = 'gmsg ' + role;
+            el.textContent = text;
+            msgs.appendChild(el);
+            msgs.scrollTop = msgs.scrollHeight;
+            return el;
+        }
+
+        document.getElementById('gracie-input').addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+    })();
+</script>

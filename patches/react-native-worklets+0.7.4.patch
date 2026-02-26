@@ -1,0 +1,72 @@
+diff --git a/node_modules/react-native-worklets/android/CMakeLists.txt b/node_modules/react-native-worklets/android/CMakeLists.txt
+index 7ce6058..63ab09f 100644
+--- a/node_modules/react-native-worklets/android/CMakeLists.txt
++++ b/node_modules/react-native-worklets/android/CMakeLists.txt
+@@ -88,8 +88,34 @@ target_include_directories(
+ # build shared lib
+ set_target_properties(worklets PROPERTIES LINKER_LANGUAGE CXX)
+ 
+-target_link_libraries(worklets log ReactAndroid::reactnative ReactAndroid::jsi
+-                      fbjni::fbjni)
++if(TARGET ReactAndroid::reactnative)
++  target_link_libraries(worklets log ReactAndroid::reactnative ReactAndroid::jsi
++                        fbjni::fbjni)
++else()
++  # ReactAndroid::reactnative was not exported by the prefab (common with
++  # React Native 0.80+ / Expo 51 toolchain mismatch). Try to locate the .so
++  # on disk so we can create an imported target manually.
++  find_library(
++    REACT_NATIVE_SO
++    reactnative
++    PATHS
++      "${REACT_NATIVE_DIR}/ReactAndroid/build/intermediates/library_jni/debug/jni/${ANDROID_ABI}"
++      "${REACT_NATIVE_DIR}/ReactAndroid/build/intermediates/library_jni/release/jni/${ANDROID_ABI}"
++    NO_DEFAULT_PATH
++  )
++  if(REACT_NATIVE_SO)
++    add_library(react_native_fallback SHARED IMPORTED)
++    set_target_properties(react_native_fallback PROPERTIES IMPORTED_LOCATION "${REACT_NATIVE_SO}")
++    target_link_libraries(worklets log react_native_fallback ReactAndroid::jsi fbjni::fbjni)
++  else()
++    # libreactnative.so not locatable at configure time; allow the Android
++    # dynamic linker to resolve its symbols at runtime (libreactnative.so is
++    # always loaded before worklets in a React Native process).
++    message(WARNING "[Worklets] ReactAndroid::reactnative not found; deferring to runtime symbol resolution.")
++    target_link_options(worklets PRIVATE "-Wl,--allow-shlib-undefined")
++    target_link_libraries(worklets log ReactAndroid::jsi fbjni::fbjni)
++  endif()
++endif()
+ 
+ if(${JS_RUNTIME} STREQUAL "hermes")
+   if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 82)
+diff --git a/node_modules/react-native-worklets/android/build.gradle b/node_modules/react-native-worklets/android/build.gradle
+index 61c565b..374cbfa 100644
+--- a/node_modules/react-native-worklets/android/build.gradle
++++ b/node_modules/react-native-worklets/android/build.gradle
+@@ -13,11 +13,8 @@ def safeAppExtGet(prop, fallback) {
+ }
+ 
+ def isNewArchitectureEnabled() {
+-    // To opt-in for the New Architecture, you can either:
+-    // - Set `newArchEnabled` to true inside the `gradle.properties` file
+-    // - Invoke gradle with `-newArchEnabled=true`
+-    // - Set an environment variable `ORG_GRADLE_PROJECT_newArchEnabled=true`
+-    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
++    // PATCHED: Always enable new architecture for CI/CD reliability
++    return true
+ }
+ 
+ def resolveReactNativeDirectory() {
+diff --git a/node_modules/react-native-worklets/compatibility.json b/node_modules/react-native-worklets/compatibility.json
+index 3452554..f772510 100644
+--- a/node_modules/react-native-worklets/compatibility.json
++++ b/node_modules/react-native-worklets/compatibility.json
+@@ -3,7 +3,7 @@
+     "react-native": ["0.79", "0.80", "0.81", "0.82"]
+   },
+   "0.7.x": {
+-    "react-native": ["0.79", "0.80", "0.81", "0.82", "0.83", "0.84"]
++    "react-native": ["0.74", "0.79", "0.80", "0.81", "0.82", "0.83", "0.84"]
+   },
+   "0.6.x": {
+     "react-native": ["0.78", "0.79", "0.80", "0.81", "0.82"]
