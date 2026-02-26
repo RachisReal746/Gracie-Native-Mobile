@@ -47,6 +47,8 @@
   },
   "private": true,
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "@react-native-community/cli": "15.0.1",
+    "@react-native-community/cli-server-api": "15.0.1"
   }
 }
