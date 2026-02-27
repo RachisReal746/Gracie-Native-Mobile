@@ -4,11 +4,8 @@ import { Send, Loader, Download, ChevronDown, ChevronUp, RefreshCw, Trash2 } fro
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { v4 as uuidv4 } from 'uuid'; // Just kidding, we'll use a simple random ID if needed, or better, just a fixed string for now or generate one.
-// Actually, let's just generate a random string if uuid isn't available, or use Date.now().toString()
 
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.20:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://192.168.0.20:3000';
 
 export default function ChatScreen() {
     const [messages, setMessages] = useState([]);
