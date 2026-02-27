@@ -91,6 +91,16 @@ jobs:
           echo "=== autolinking dir contents ==="
           ls -la android/build/generated/autolinking/
 
+      - name: Fix NDK version in android/build.gradle
+        run: |
+          echo "=== ndkVersion before fix ==="
+          grep -n "ndkVersion" android/build.gradle || echo "(not found)"
+          # Replace whatever NDK version expo-prebuild generated (r26) with r27b (clang 18)
+          # All native libraries read rootProject.ext.ndkVersion from this file
+          sed -i 's/ndkVersion\s*=\s*"[^"]*"/ndkVersion = "27.1.12297006"/' android/build.gradle
+          echo "=== ndkVersion after fix ==="
+          grep -n "ndkVersion" android/build.gradle || echo "(still not found)"
+
       - name: Fix Gradle wrapper version
         run: |
           PROPS=android/gradle/wrapper/gradle-wrapper.properties
