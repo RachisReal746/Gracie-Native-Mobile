@@ -30,12 +30,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Fix Kotlin version in expo-updates gradle plugin
-        run: |
-          sed -i 's/kotlin("jvm") version "1.9.23"/kotlin("jvm") version "2.1.20"/' \
-            node_modules/expo-updates/expo-updates-gradle-plugin/build.gradle.kts
+        run: npm install --legacy-peer-deps
 
       - name: Create .env for build
         run: |
