@@ -105,6 +105,14 @@ jobs:
           echo "=== After fix ==="
           cat "$PROPS"
 
+      - name: Increase JVM memory for Gradle
+        run: |
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError" >> android/gradle.properties
+          echo "org.gradle.daemon=false" >> android/gradle.properties
+          echo "org.gradle.parallel=false" >> android/gradle.properties
+          echo "=== gradle.properties JVM settings ==="
+          grep "jvmargs\|daemon\|parallel" android/gradle.properties
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
