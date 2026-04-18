@@ -8,13 +8,17 @@ const rateLimit = require('express-rate-limit');
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const journalRoutes = require('./routes/journalRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+
+// Notification service (cron jobs)
+const notificationService = require('./services/notificationService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Allow embedding in B12 website
+  contentSecurityPolicy: false,
 }));
 
 const allowedOrigins = [
@@ -25,20 +29,19 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
-    return callback(null, true); // Allow all for now during beta
+    return callback(null, true);
   },
   credentials: true
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
@@ -47,17 +50,15 @@ app.use('/api/', limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from website folder
-app.use(express.static('../website'));
-
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/journal', journalRoutes);
+app.use('/api/notifications', notificationRoutes);
 
-// Root route - serve index.html
+// Root route
 app.get('/', (req, res) => {
-  res.sendFile('index.html', { root: '../website' });
+  res.json({ message: 'Gracie API is running' });
 });
 
 // Health check
@@ -86,12 +87,13 @@ app.use((req, res) => {
   });
 });
 
+// Start notification cron jobs
+notificationService.startCronJobs();
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Gracie Server Started`);
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🚀 Also accessible at http://192.168.0.2:${PORT}`); console.log(`🚀 Also accessible at http://192.168.1.82:${PORT}`);
-  console.log(`📁 Serving website from: ${__dirname}/../website`);
+  console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🔗 Supabase connected to: ${process.env.SUPABASE_URL}`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
   console.log(`📧 Email service ready: ${process.env.SMTP_FROM_EMAIL}\n`);

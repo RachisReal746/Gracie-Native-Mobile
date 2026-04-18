@@ -1,7 +1,8 @@
+
 {
   "expo": {
     "name": "Gracie",
-    "slug": "gracie",
+    "slug": "mobile-rebuild",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,7 +28,8 @@
       "package": "com.anchoredbygrace.gracie",
       "permissions": [
         "INTERNET",
-        "INTERNET"
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
       ]
     },
     "web": {
@@ -36,6 +38,14 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#53ABB5",
+          "sounds": []
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -50,7 +60,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "32e82fed-6a3c-418c-aad7-f4228d70c472"
+        "projectId": "534046fb-0ed2-4fed-92de-9e80f9b2effe"
       }
     },
     "runtimeVersion": {

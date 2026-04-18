@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
-import { Save, BookOpen, MessageCircle, Sparkles } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Linking } from 'react-native';
+import { Save, BookOpen, MessageCircle, Sparkles, Shield, Phone } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link } from 'expo-router';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.20:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://192.168.0.20:3000';
 
 export default function JournalScreen() {
     const [currentEntry, setCurrentEntry] = useState('');
@@ -246,6 +246,53 @@ export default function JournalScreen() {
                         <Text className="text-[#A9ABAB] font-biorhyme ml-2">View Chat History</Text>
                     </TouchableOpacity>
                 </Link>
+            </View>
+
+            {/* Privacy Banner */}
+            <View className="bg-[#E9ECEF] py-4 px-4 border-t border-gray-300">
+                <View className="flex-row items-start gap-3 max-w-lg mx-auto">
+                    <Shield size={24} color="#53ABB5" />
+                    <View className="flex-1">
+                        <Text className="text-base text-[#53ABB5] mb-1 font-shadows">
+                            Your Privacy & Safety First
+                        </Text>
+                        <Text className="text-sm text-gray-700 font-questrial leading-relaxed">
+                            All conversations are private and encrypted. We follow Australian Privacy Principles. Your recovery journey is secure with us.
+                        </Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Crisis Support Banner */}
+            <View className="bg-[#F6CEA7] py-4 px-4 border-t border-[#F8D1AB]">
+                <View className="max-w-lg mx-auto">
+                    <View className="flex-row items-center gap-3 mb-2">
+                        <Phone size={24} color="#53ABB5" />
+                        <Text className="text-base text-[#53ABB5] font-shadows">
+                            24/7 Crisis Support
+                        </Text>
+                    </View>
+                    <Text className="text-sm text-gray-700 mb-3 ml-9 font-questrial leading-relaxed">
+                        If you're in immediate danger, please reach out to emergency services or crisis hotlines
+                    </Text>
+                    <View className="ml-9 flex-row flex-wrap items-center">
+                        <Text className="text-gray-800 text-sm font-questrial">Emergency: </Text>
+                        <TouchableOpacity onPress={() => Linking.openURL('tel:000')}>
+                            <Text className="text-[#53ABB5] text-sm font-questrial">000</Text>
+                        </TouchableOpacity>
+                        <Text className="mx-2 text-gray-500">|</Text>
+                        <Text className="text-gray-800 text-sm font-questrial">Lifeline: </Text>
+                        <TouchableOpacity onPress={() => Linking.openURL('tel:131114')}>
+                            <Text className="text-[#53ABB5] text-sm font-questrial">13 11 14</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View className="ml-9 mt-1 flex-row items-center">
+                        <Text className="text-gray-800 text-sm font-questrial">Beyond Blue: </Text>
+                        <TouchableOpacity onPress={() => Linking.openURL('tel:1300224636')}>
+                            <Text className="text-[#53ABB5] text-sm font-questrial">1300 22 4636</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </View>
 
             <View className="h-20" />

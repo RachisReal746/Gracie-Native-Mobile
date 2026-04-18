@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
-import { Send, Loader, Download, ChevronDown, ChevronUp, RefreshCw, Trash2 } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Linking } from 'react-native';
+import { Send, Loader, Download, ChevronDown, ChevronUp, RefreshCw, Trash2, Shield, Phone } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://192.168.0.20:3000';
 
 export default function ChatScreen() {
+    const { prefillMessage } = useLocalSearchParams();
+
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +37,13 @@ export default function ChatScreen() {
         loadUserAndHistory();
     }, []);
 
+    // If opened via notification, prefill the input (or auto-send if not empty)
+    useEffect(() => {
+        if (prefillMessage && prefillMessage.trim()) {
+            setInputMessage(prefillMessage);
+        }
+    }, [prefillMessage]);
+
     const loadUserAndHistory = async () => {
         try {
             const userStr = await AsyncStorage.getItem('user');
@@ -56,29 +66,32 @@ export default function ChatScreen() {
             }
             setUser(currentUser);
 
-            const savedHistory = await AsyncStorage.getItem('chatHistory');
-            if (savedHistory) {
-                const history = JSON.parse(savedHistory);
+            // Register push token with backend now that we have a userId
+            const pushToken = await AsyncStorage.getItem('pushToken');
+            if (pushToken && currentUser.id) {
+                axios.post(`${API_URL}/api/notifications/register`, {
+                    user_id: currentUser.id,
+                    push_token: pushToken,
+                }).catch(() => {});
+            }
 
-                // Add a welcome back message if the last message was a while ago
-                const welcomeBackMessage = {
-                    id: Date.now(),
-                    sender: 'gracie',
-                    text: `Welcome back, ${currentUser.name || 'Friend'}! I've missed our connection. Should we pick up where we left off?`,
-                    timestamp: new Date().toISOString(),
-                };
+            // Always start fresh — clear history every time the chat screen opens
+            await AsyncStorage.removeItem('chatHistory');
 
-                const finalMessages = [...history, welcomeBackMessage];
-                setMessages(finalMessages);
-                setHasStarted(true);
-            } else {
+            // Show the specific intro only the very first time a new user opens chat
+            const hasSeenIntro = await AsyncStorage.getItem('hasSeenGracieIntro');
+            if (!hasSeenIntro) {
                 const introMessage = {
                     id: Date.now(),
                     sender: 'gracie',
-                    text: `Hi ${currentUser.name || 'Friend'}! I'm Gracie, your faithful therapy trained chat support. We can talk anytime, I'm still here even at 3am or when you're feeling lonely. I will never judge or make you feel guilt or shame and I promise to keep your secrets. Is that ok?`,
+                    text: `Hi I'm Gracie, your faithful therapy trained chat support. We can talk anytime. I'm still here even at 3am or when you're feeling lonely. I will never judge or make you feel guilt or shame and I promise to keep your secrets. I'm looking forward to getting to know you.`,
                     timestamp: new Date().toISOString(),
                 };
                 setMessages([introMessage]);
+                await AsyncStorage.setItem('hasSeenGracieIntro', 'true');
+            } else {
+                // Returning user — fresh session, reflection prompts visible
+                setMessages([]);
             }
         } catch (e) {
             console.error(e);
@@ -90,18 +103,6 @@ export default function ChatScreen() {
             await AsyncStorage.removeItem('chatHistory');
             setMessages([]);
             setHasStarted(false);
-
-            // Re-load to get original intro message
-            const userStr = await AsyncStorage.getItem('user');
-            const currentUser = userStr ? JSON.parse(userStr) : { name: 'Friend' };
-
-            const introMessage = {
-                id: Date.now(),
-                sender: 'gracie',
-                text: `Hi ${currentUser.name || 'Friend'}! I'm Gracie, your faithful therapy trained chat support. We can talk anytime, I'm still here even at 3am or when you're feeling lonely. I will never judge or make you feel guilt or shame and I promise to keep your secrets. Is that ok?`,
-                timestamp: new Date().toISOString(),
-            };
-            setMessages([introMessage]);
             scrollViewRef.current?.scrollTo({ y: 0, animated: true });
         } catch (e) {
             console.error('Error clearing chat:', e);
@@ -246,6 +247,51 @@ export default function ChatScreen() {
                                 <Text className="ml-2 text-gray-400 text-[10px] font-questrial">Gracie is typing...</Text>
                             </View>
                         )}
+
+                        {/* Privacy Banner */}
+                        <View className="bg-[#E9ECEF] py-4 px-4 border-t border-gray-300 mt-4 -mx-4">
+                            <View className="flex-row items-start gap-3">
+                                <Shield size={24} color="#53ABB5" />
+                                <View className="flex-1">
+                                    <Text className="text-base text-[#53ABB5] mb-1 font-shadows">
+                                        Your Privacy & Safety First
+                                    </Text>
+                                    <Text className="text-sm text-gray-700 font-questrial leading-relaxed">
+                                        All conversations are private and encrypted. We follow Australian Privacy Principles. Your recovery journey is secure with us.
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Crisis Support Banner */}
+                        <View className="bg-[#F6CEA7] py-4 px-4 border-t border-[#F8D1AB] -mx-4">
+                            <View className="flex-row items-center gap-3 mb-2">
+                                <Phone size={24} color="#53ABB5" />
+                                <Text className="text-base text-[#53ABB5] font-shadows">
+                                    24/7 Crisis Support
+                                </Text>
+                            </View>
+                            <Text className="text-sm text-gray-700 mb-3 ml-9 font-questrial leading-relaxed">
+                                If you're in immediate danger, please reach out to emergency services or crisis hotlines
+                            </Text>
+                            <View className="ml-9 flex-row flex-wrap items-center">
+                                <Text className="text-gray-800 text-sm font-questrial">Emergency: </Text>
+                                <TouchableOpacity onPress={() => Linking.openURL('tel:000')}>
+                                    <Text className="text-[#53ABB5] text-sm font-questrial">000</Text>
+                                </TouchableOpacity>
+                                <Text className="mx-2 text-gray-500">|</Text>
+                                <Text className="text-gray-800 text-sm font-questrial">Lifeline: </Text>
+                                <TouchableOpacity onPress={() => Linking.openURL('tel:131114')}>
+                                    <Text className="text-[#53ABB5] text-sm font-questrial">13 11 14</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View className="ml-9 mt-1 flex-row items-center">
+                                <Text className="text-gray-800 text-sm font-questrial">Beyond Blue: </Text>
+                                <TouchableOpacity onPress={() => Linking.openURL('tel:1300224636')}>
+                                    <Text className="text-[#53ABB5] text-sm font-questrial">1300 22 4636</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </ScrollView>
 
                     {/* Input Area */}

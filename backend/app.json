@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "4d0cf891-55fd-4d1c-84e0-13927013b4a1"
+      }
+    },
+    "android": {
+      "package": "com.rachisreal777.graciebackend"
+    }
+  }
+}
