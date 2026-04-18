@@ -1,8 +1,15 @@
 const Groq = require('groq-sdk');
 const supabase = require('./supabaseClient');
 const emailService = require('./emailService');
+const patternService = require('./patternService');
+const skillService = require('./skillService');
+const notificationService = require('./notificationService');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.NEW_GROQ_API_KEY });
+
+if (!process.env.NEW_GROQ_API_KEY) {
+  console.error('FATAL: NEW_GROQ_API_KEY is not set. Groq will not work.');
+}
 
 // Gracie's system prompt
 const GRACIE_SYSTEM_PROMPT = `You are Gracie, a warm and faithful AI support companion for Anchored by Grace. You support people in addiction recovery and trauma healing.
@@ -20,16 +27,36 @@ When a user first starts chatting, use one of these openers naturally (don't use
 Every response should offer one of two lanes — let the user stay in control:
 - Vent lane: Reflect what they said back in your own words, then ask one curiosity question.
 - Action lane: Offer a brief, practical next step (30–90 seconds — breathing, grounding, one small action).
-Never force a lane. Let them choose.
+Ask naturally: "Want to vent, or want a quick reset?" — never force a lane.
 
-**Interaction rules:**
+**Voice rules (non-negotiables):**
+- Short replies by default — 3 to 8 lines maximum.
+- Ask only one question at a time. Never stack questions.
 - Always start with reflection — show you heard them before anything else.
-- Ask only one question at a time.
-- Use the user's own words and language back to them.
+- Use the user's exact wording back to them (e.g. "you said 'wired'…").
 - Never guilt, shame, preach, or give unsolicited advice.
+- Deliver skills as tiny experiments, never lectures. ("Want to try a 30-second thing?" not "You should try…")
 - Never diagnose or claim to provide therapy.
 - Do not start responses with "I" — vary your openings.
-- Keep responses to 2-4 sentences. Leave space for them to keep talking.
+
+**Check-in (light touch — 1 to 2 per conversation, never all at once):**
+Naturally weave in brief check-in questions when they feel relevant:
+- Mood level (e.g. "Where's your energy sitting right now — low, medium, high?")
+- Craving or urge level if relevant
+- One-word emotion label
+- What triggered this moment
+- What they've tried so far
+Keep it conversational. Never make it feel like a form.
+
+**User memory (use what they've shared):**
+Pay attention to and gently reference things the user has told you across this conversation:
+- Their name and how they like to be spoken to
+- Their goals (sobriety / moderation / harm reduction)
+- Triggers they've mentioned
+- Coping tools that have worked for them
+- Times of day or situations they find hardest
+- Values they've shared (faith, relationships, health, etc.)
+Only reference what they've actually told you. Never assume or fabricate.
 
 **Safety boundaries (only when risk cues appear — do not use otherwise):**
 - "I can't replace professional help, but I can stay with you through the next few minutes and help you choose a safer next step."
@@ -58,10 +85,8 @@ const CRISIS_KEYWORDS = {
 };
 
 class ChatService {
-  // Detect crisis keywords in message
   detectCrisisKeywords(message) {
     const lowerMessage = message.toLowerCase();
-
     for (const keyword of CRISIS_KEYWORDS.TIER_1) {
       if (lowerMessage.includes(keyword)) return 'TIER_1';
     }
@@ -71,11 +96,9 @@ class ChatService {
     for (const keyword of CRISIS_KEYWORDS.TIER_3) {
       if (lowerMessage.includes(keyword)) return 'TIER_3';
     }
-
     return null;
   }
 
-  // Analyze crisis context with AI
   async analyzeCrisisContext(message) {
     try {
       const response = await groq.chat.completions.create({
@@ -108,19 +131,18 @@ Respond with ONE word only:
       return analysis || 'SAFE';
     } catch (error) {
       console.error('Crisis analysis error:', error);
-      return 'CONCERN'; // Default to caution
+      return 'CONCERN';
     }
   }
 
-  // Get crisis response based on tier and AI analysis
   getCrisisResponse(tier, aiAnalysis) {
     if (aiAnalysis === 'IMMEDIATE') {
       return `🚨 I'm really concerned about what you've shared. Your safety is the most important thing right now.
 
 Please reach out for immediate help:
-• Emergency Services: 000
-• Lifeline (24/7): 13 11 14
-• Beyond Blue: 1300 22 4636
+- Emergency Services: 000
+- Lifeline (24/7): 13 11 14
+- Beyond Blue: 1300 22 4636
 
 You don't have to face this alone. These services are here to help you right now.`;
     }
@@ -134,30 +156,28 @@ What's going on for you today?`;
     }
 
     if (tier === 'TIER_3') {
-      // TIER_3 words are common in recovery — let Gracie handle naturally via AI
       return null;
     }
 
     return null;
   }
 
-  // Send message to Gracie
   async sendMessage(userId, message, sessionId = null) {
     userId = String(userId);
     console.log(`Sending message for user: ${userId}, session: ${sessionId}`);
+
+    notificationService.updateLastActive(userId).catch(() => {});
+
     try {
-      // Check for crisis keywords
       const crisisTier = this.detectCrisisKeywords(message);
       let crisisResponse = null;
       let aiAnalysis = 'SAFE';
       console.log(`Crisis tier: ${crisisTier}`);
 
       if (crisisTier) {
-        // Analyze context with AI
         aiAnalysis = await this.analyzeCrisisContext(message);
         crisisResponse = this.getCrisisResponse(crisisTier, aiAnalysis);
 
-        // Send email alert if IMMEDIATE crisis
         if (aiAnalysis === 'IMMEDIATE') {
           const { data: user } = await supabase
             .from('users')
@@ -177,7 +197,6 @@ What's going on for you today?`;
         }
       }
 
-      // Save user message
       const { data: userMessage, error: userMsgError } = await supabase
         .from('chat_messages')
         .insert({
@@ -191,7 +210,6 @@ What's going on for you today?`;
 
       if (userMsgError) {
         console.error('Error saving user message to Supabase:', userMsgError);
-        // If it's a guest or foreign key error, we continue with a mock message object to allow the chat to function
         if (userId.startsWith('guest_') || userMsgError.code === '23503') {
           console.log('Continuing as guest/unregistered user...');
         } else {
@@ -207,7 +225,6 @@ What's going on for you today?`;
         session_id: sessionId || `session_${Date.now()}`
       };
 
-      // If crisis detected, return crisis response
       if (crisisResponse) {
         const { data: aiMessage, error: aiMsgError } = await supabase
           .from('chat_messages')
@@ -234,7 +251,6 @@ What's going on for you today?`;
         };
       }
 
-      // Get conversation history (last 10 messages for context)
       const { data: history, error: historyError } = await supabase
         .from('chat_messages')
         .select('message, sender')
@@ -247,9 +263,8 @@ What's going on for you today?`;
       }
 
       const safeHistory = history || [];
-
       console.log(`Building conversation context for ${safeHistory.length} messages...`);
-      // Build conversation context
+
       const conversationHistory = safeHistory
         .reverse()
         .map(msg => ({
@@ -257,15 +272,32 @@ What's going on for you today?`;
           content: msg.message
         }));
 
-      let aiResponse = "I'm here to support you. Could you tell me more about what's on your mind?";
+      const [userPatterns, userTopSkills] = await Promise.all([
+        patternService.analyzePatterns(userId),
+        skillService.getUserTopSkills(userId)
+      ]);
+      const patternContext = patternService.formatInsightsForGracie(userPatterns);
+      const skillContext = skillService.formatSkillsForGracie(userTopSkills);
+      const systemPromptWithPatterns = GRACIE_SYSTEM_PROMPT + patternContext + skillContext;
+
+      patternService.extractCheckInData(message).then(checkInData => {
+        if (checkInData) {
+          patternService.saveCheckIn(userId, effectiveUserMessage.session_id, checkInData);
+        }
+      }).catch(() => {});
+
+      // --- GROQ CALL ---
+      console.log(`Calling Groq API...`);
+      console.log(`API key present: ${!!process.env.NEW_GROQ_API_KEY}`);
+      console.log(`Conversation history length: ${conversationHistory.length}`);
+
+      let aiResponse;
 
       try {
-        console.log(`Calling Groq API (model: llama-3.3-70b-versatile)...`);
-        // Get AI response from Groq
         const completion = await groq.chat.completions.create({
           model: 'llama-3.3-70b-versatile',
           messages: [
-            { role: 'system', content: GRACIE_SYSTEM_PROMPT },
+            { role: 'system', content: systemPromptWithPatterns },
             ...conversationHistory,
             { role: 'user', content: message }
           ],
@@ -273,15 +305,22 @@ What's going on for you today?`;
           max_tokens: 500
         });
 
-        aiResponse = completion.choices[0]?.message?.content || aiResponse;
+        console.log('Raw Groq response:', JSON.stringify(completion.choices?.[0], null, 2));
+        aiResponse = completion.choices[0]?.message?.content;
+
+        if (!aiResponse) {
+          throw new Error('Groq returned an empty response body');
+        }
+
         console.log(`Groq API success. Response length: ${aiResponse.length}`);
       } catch (groqError) {
-        console.error('Groq API Error:', groqError.message);
-        console.error(groqError);
-        // We continue with the default aiResponse if Groq fails
+        console.error('Groq API Error name:', groqError.name);
+        console.error('Groq API Error message:', groqError.message);
+        console.error('Groq API Error status:', groqError.status);
+        console.error('Full error:', JSON.stringify(groqError, null, 2));
+        throw groqError;
       }
 
-      // Save AI response
       const { data: aiMessage, error: finalAiMsgError } = await supabase
         .from('chat_messages')
         .insert({
@@ -305,13 +344,13 @@ What's going on for you today?`;
           session_id: effectiveUserMessage.session_id
         }
       };
+
     } catch (error) {
       console.error('Chat service error:', error);
       throw error;
     }
   }
 
-  // Get chat history for user
   async getChatHistory(userId) {
     try {
       const { data: messages, error } = await supabase
