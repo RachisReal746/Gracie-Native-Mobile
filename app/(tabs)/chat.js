@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Linking } from 'react-native';
-import { Send, Loader, Download, ChevronDown, ChevronUp, RefreshCw, Trash2, Shield, Phone } from 'lucide-react-native';
+import { Send, RefreshCw, Shield, Phone } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,7 +37,6 @@ export default function ChatScreen() {
         loadUserAndHistory();
     }, []);
 
-    // If opened via notification, prefill the input (or auto-send if not empty)
     useEffect(() => {
         if (prefillMessage && prefillMessage.trim()) {
             setInputMessage(prefillMessage);
@@ -49,24 +48,18 @@ export default function ChatScreen() {
             const userStr = await AsyncStorage.getItem('user');
             let currentUser = userStr ? JSON.parse(userStr) : null;
 
-            // If no user or user has no ID, ensure we have a guest ID
             if (!currentUser || !currentUser.id) {
                 let guestId = await AsyncStorage.getItem('guest_id');
                 if (!guestId) {
                     guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                     await AsyncStorage.setItem('guest_id', guestId);
                 }
-
-                // Preserve existing name if we have a user object but no ID
                 const name = currentUser?.name || 'Friend';
                 currentUser = { id: guestId, name: name };
-
-                // Save this back to AsyncStorage so we persist the ID
                 await AsyncStorage.setItem('user', JSON.stringify(currentUser));
             }
             setUser(currentUser);
 
-            // Register push token with backend now that we have a userId
             const pushToken = await AsyncStorage.getItem('pushToken');
             if (pushToken && currentUser.id) {
                 axios.post(`${API_URL}/api/notifications/register`, {
@@ -75,10 +68,8 @@ export default function ChatScreen() {
                 }).catch(() => {});
             }
 
-            // Always start fresh — clear history every time the chat screen opens
             await AsyncStorage.removeItem('chatHistory');
 
-            // Show the specific intro only the very first time a new user opens chat
             const hasSeenIntro = await AsyncStorage.getItem('hasSeenGracieIntro');
             if (!hasSeenIntro) {
                 const introMessage = {
@@ -90,7 +81,6 @@ export default function ChatScreen() {
                 setMessages([introMessage]);
                 await AsyncStorage.setItem('hasSeenGracieIntro', 'true');
             } else {
-                // Returning user — fresh session, reflection prompts visible
                 setMessages([]);
             }
         } catch (e) {
@@ -112,7 +102,6 @@ export default function ChatScreen() {
     const handleSendMessage = async (text = inputMessage) => {
         if (!text.trim()) return;
 
-        // If this is the starting point, maybe clear any old baggage first
         if (!hasStarted && text === 'Let\'s begin') {
             await AsyncStorage.removeItem('chatHistory');
         }
@@ -129,6 +118,10 @@ export default function ChatScreen() {
         setInputMessage('');
         setIsLoading(true);
         setHasStarted(true);
+
+        setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
 
         try {
             const token = await AsyncStorage.getItem('authToken');
@@ -149,6 +142,10 @@ export default function ChatScreen() {
             const finalMessages = [...newMessages, gracieMessage];
             setMessages(finalMessages);
             await AsyncStorage.setItem('chatHistory', JSON.stringify(finalMessages));
+
+            setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 100);
         } catch (error) {
             console.error('Chat error:', error);
             const errorMessage = {
@@ -164,13 +161,13 @@ export default function ChatScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top']}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 80}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
-                <View className="flex-1 bg-gray-50">
+                <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
                     {/* Chat Header */}
                     <View className="bg-primary py-4 px-5 shadow-sm flex-row justify-between items-center relative overflow-hidden">
                         <View className="flex-1">
@@ -187,13 +184,12 @@ export default function ChatScreen() {
                         <TouchableOpacity
                             onPress={clearChat}
                             className="bg-white/10 p-2 rounded-full z-10"
-                            title="Reset Session"
                         >
                             <RefreshCw size={18} color="white" />
                         </TouchableOpacity>
                     </View>
 
-                    {/* Reflection Prompts Section - Reverted to Vertical & Conditional */}
+                    {/* Reflection Prompts */}
                     {!hasStarted && (
                         <View className="bg-white py-4 px-5 border-b border-gray-100">
                             <Text className="text-sm mb-3 text-primary font-shadows">Need a starting point?</Text>
@@ -216,12 +212,13 @@ export default function ChatScreen() {
                         </View>
                     )}
 
-                    {/* Messages Container */}
+                    {/* Messages */}
                     <ScrollView
                         ref={scrollViewRef}
-                        className="flex-1 px-4"
-                        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 }}
                         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                        keyboardShouldPersistTaps="handled"
                     >
                         {messages.map((message) => (
                             <View
@@ -241,6 +238,7 @@ export default function ChatScreen() {
                                 </View>
                             </View>
                         ))}
+
                         {isLoading && (
                             <View className="bg-white self-start rounded-2xl rounded-tl-none p-3 shadow-sm mb-4 flex-row items-center border border-gray-100">
                                 <ActivityIndicator size="small" color="#53ABB5" />
@@ -249,13 +247,11 @@ export default function ChatScreen() {
                         )}
 
                         {/* Privacy Banner */}
-                        <View className="bg-[#E9ECEF] py-4 px-4 border-t border-gray-300 mt-4 -mx-4">
+                        <View style={{ backgroundColor: '#E9ECEF', paddingVertical: 16, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: '#d1d5db', marginTop: 16, marginHorizontal: -16 }}>
                             <View className="flex-row items-start gap-3">
                                 <Shield size={24} color="#53ABB5" />
                                 <View className="flex-1">
-                                    <Text className="text-base text-[#53ABB5] mb-1 font-shadows">
-                                        Your Privacy & Safety First
-                                    </Text>
+                                    <Text className="text-base text-[#53ABB5] mb-1 font-shadows">Your Privacy & Safety First</Text>
                                     <Text className="text-sm text-gray-700 font-questrial leading-relaxed">
                                         All conversations are private and encrypted. We follow Australian Privacy Principles. Your recovery journey is secure with us.
                                     </Text>
@@ -263,13 +259,11 @@ export default function ChatScreen() {
                             </View>
                         </View>
 
-                        {/* Crisis Support Banner */}
-                        <View className="bg-[#F6CEA7] py-4 px-4 border-t border-[#F8D1AB] -mx-4">
+                        {/* Crisis Banner */}
+                        <View style={{ backgroundColor: '#F6CEA7', paddingVertical: 16, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: '#F8D1AB', marginHorizontal: -16 }}>
                             <View className="flex-row items-center gap-3 mb-2">
                                 <Phone size={24} color="#53ABB5" />
-                                <Text className="text-base text-[#53ABB5] font-shadows">
-                                    24/7 Crisis Support
-                                </Text>
+                                <Text className="text-base text-[#53ABB5] font-shadows">24/7 Crisis Support</Text>
                             </View>
                             <Text className="text-sm text-gray-700 mb-3 ml-9 font-questrial leading-relaxed">
                                 If you're in immediate danger, please reach out to emergency services or crisis hotlines
@@ -295,19 +289,18 @@ export default function ChatScreen() {
                     </ScrollView>
 
                     {/* Input Area */}
-                    <View className="bg-white px-4 py-3 border-t border-gray-100 flex-row items-center gap-3">
+                    <View style={{ backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <TextInput
                             value={inputMessage}
                             onChangeText={setInputMessage}
                             placeholder="Type a message..."
-                            className="flex-1 bg-gray-50 rounded-full px-5 py-2.5 font-questrial text-sm h-11"
+                            style={{ flex: 1, backgroundColor: '#f9fafb', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 10, fontSize: 14, maxHeight: 100 }}
                             multiline
-                            maxHeight={100}
                         />
                         <TouchableOpacity
                             onPress={() => handleSendMessage()}
                             disabled={isLoading || !inputMessage.trim()}
-                            className={`bg-[#A9ABAB] w-11 h-11 items-center justify-center rounded-full shadow-sm ${isLoading ? 'opacity-50' : ''}`}
+                            style={{ backgroundColor: '#A9ABAB', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, opacity: isLoading ? 0.5 : 1 }}
                         >
                             <Send size={18} color="white" />
                         </TouchableOpacity>
