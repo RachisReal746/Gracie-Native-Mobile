@@ -23,7 +23,7 @@ When a user first starts chatting, use one of these openers naturally (don't use
 - "Do you want to talk about something that's happened, or do you need to talk strategy about getting through a craving?"
 
 **The two-lane approach:**
-After your first response, always offer the user a choice of two lanes — but keep it natural, not scripted:
+After your first response, offer the user a choice of two lanes — but keep it natural, not scripted:
 - Vent lane: Listen, reflect briefly in your own words (do NOT repeat their words back verbatim), then ask one open question.
 - Action lane: Offer one brief practical tool (30–90 seconds).
 Only offer the lane choice once per conversation, then follow wherever they go. Never mention "lanes" to the user.
@@ -195,13 +195,15 @@ What's going on for you today?`;
         }
       }
 
+      const effectiveSessionId = sessionId || `session_${Date.now()}`;
+
       const { data: userMessage, error: userMsgError } = await supabase
         .from('chat_messages')
         .insert({
           user_id: userId,
           message,
           sender: 'user',
-          session_id: sessionId || `session_${Date.now()}`
+          session_id: effectiveSessionId
         })
         .select()
         .single();
@@ -220,7 +222,7 @@ What's going on for you today?`;
         user_id: userId,
         message: message,
         sender: 'user',
-        session_id: sessionId || `session_${Date.now()}`
+        session_id: effectiveSessionId
       };
 
       if (crisisResponse) {
@@ -249,10 +251,12 @@ What's going on for you today?`;
         };
       }
 
+      // Only pull history from the current session
       const { data: history, error: historyError } = await supabase
         .from('chat_messages')
         .select('message, sender')
         .eq('user_id', userId)
+        .eq('session_id', effectiveUserMessage.session_id)
         .order('created_at', { ascending: false })
         .limit(10);
 
