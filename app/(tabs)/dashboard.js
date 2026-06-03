@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Share, Linking, Image, Modal, TextInput } from 'react-native';
-import { MessageCircle, BookOpen, Brain, Sparkles, Info, Users, Copy } from 'lucide-react-native';
+import { MessageCircle, BookOpen, Brain, Sparkles, Info, Users, Copy, Shield, Phone } from 'lucide-react-native';
 import { Link, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -27,8 +27,6 @@ export default function DashboardScreen() {
         'The brain can heal and form new neural pathways even after years of substance use - a process called neuroplasticity.',
         'Gratitude practices have been linked to increased happiness and reduced depression in recovery.',
     ];
-
-    const dailyVerse = '"I can do all things through Christ who strengthens me." - Philippians 4:13';
 
     useEffect(() => {
         loadData();
@@ -164,16 +162,8 @@ export default function DashboardScreen() {
                 </Text>
             </View>
 
-            {/* Bible Verse and Recovery Tracker Row - Strict Match */}
-            <View className="flex-row justify-between items-start mb-4">
-                {/* Bible Verse - LEFT - Elastic width */}
-                <View className="flex-1 pt-1 mr-4">
-                    <Text className="text-sm italic text-gray-600 font-questrial leading-relaxed">
-                        {dailyVerse}
-                    </Text>
-                </View>
-
-                {/* Recovery Tracker - RIGHT - Fixed width 100px */}
+            {/* Recovery Tracker */}
+            <View className="flex-row justify-end mb-4">
                 <View className="bg-white rounded-lg shadow-sm p-2 items-center w-[100px]" style={{ elevation: 2 }}>
                     <View className="flex-col items-center mb-1">
                         <Sparkles size={12} color="#53ABB5" />
@@ -288,8 +278,7 @@ export default function DashboardScreen() {
                     </View>
                     <View className="mb-3">
                         <Text className="text-xs text-gray-700 font-questrial leading-relaxed mb-2">• New intuition training modules added</Text>
-                        <Text className="text-xs text-gray-700 font-questrial leading-relaxed mb-2">• Enhanced journal prompts with AI insights</Text>
-                        <Text className="text-xs text-gray-700 font-questrial leading-relaxed">• Daily Bible verses in Recovery Tracker</Text>
+                        <Text className="text-xs text-gray-700 font-questrial leading-relaxed">• Enhanced journal prompts with AI insights</Text>
                     </View>
                     <TouchableOpacity
                         onPress={() => setIdeaModalVisible(true)}
@@ -338,6 +327,53 @@ export default function DashboardScreen() {
                 <TouchableOpacity onPress={() => Linking.openURL('https://www.anchoredbygrace.online')} className="bg-[#53ABB5] py-2 px-6 rounded transition-all hover:bg-[#F6CEA7]">
                     <Text className="text-white font-biorhyme text-xs">Learn More</Text>
                 </TouchableOpacity>
+            </View>
+
+            {/* Privacy Banner */}
+            <View className="bg-[#E9ECEF] py-4 px-4 border-t border-gray-300">
+                <View className="flex-row items-start gap-3 max-w-lg mx-auto">
+                    <Shield size={24} color="#53ABB5" />
+                    <View className="flex-1">
+                        <Text className="text-base text-[#53ABB5] mb-1 font-shadows">
+                            Your Privacy & Safety First
+                        </Text>
+                        <Text className="text-sm text-gray-700 font-questrial leading-relaxed">
+                            All conversations are private and encrypted. We follow Australian Privacy Principles. Your recovery journey is secure with us.
+                        </Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Crisis Support Banner */}
+            <View className="bg-[#F6CEA7] py-4 px-4 border-t border-[#F8D1AB] mb-6">
+                <View className="max-w-lg mx-auto">
+                    <View className="flex-row items-center gap-3 mb-2">
+                        <Phone size={24} color="#53ABB5" />
+                        <Text className="text-base text-[#53ABB5] font-shadows">
+                            24/7 Crisis Support
+                        </Text>
+                    </View>
+                    <Text className="text-sm text-gray-700 mb-3 ml-9 font-questrial leading-relaxed">
+                        If you're in immediate danger, please reach out to emergency services or crisis hotlines
+                    </Text>
+                    <View className="ml-9 flex-row flex-wrap items-center">
+                        <Text className="text-gray-800 text-sm font-questrial">Emergency: </Text>
+                        <TouchableOpacity onPress={() => Linking.openURL('tel:000')}>
+                            <Text className="text-[#53ABB5] text-sm font-questrial">000</Text>
+                        </TouchableOpacity>
+                        <Text className="mx-2 text-gray-500">|</Text>
+                        <Text className="text-gray-800 text-sm font-questrial">Lifeline: </Text>
+                        <TouchableOpacity onPress={() => Linking.openURL('tel:131114')}>
+                            <Text className="text-[#53ABB5] text-sm font-questrial">13 11 14</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View className="ml-9 mt-1 flex-row items-center">
+                        <Text className="text-gray-800 text-sm font-questrial">Beyond Blue: </Text>
+                        <TouchableOpacity onPress={() => Linking.openURL('tel:1300224636')}>
+                            <Text className="text-[#53ABB5] text-sm font-questrial">1300 22 4636</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </View>
 
             {/* Set Start Date Modal */}

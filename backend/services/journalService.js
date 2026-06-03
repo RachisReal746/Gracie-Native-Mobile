@@ -1,7 +1,7 @@
 const Groq = require('groq-sdk');
 const supabase = require('./supabaseClient');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.NEW_GROQ_API_KEY });
 
 // Journal insight prompt
 const JOURNAL_INSIGHT_PROMPT = `You are Gracie, an AI therapist analyzing a recovery journal entry using Australian CBT practices.
