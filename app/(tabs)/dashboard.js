@@ -185,7 +185,7 @@ export default function DashboardScreen() {
                         {!sobrietyStartDate && (
                             <TouchableOpacity
                                 onPress={handleSetStartDate}
-                                className="bg-[#A9ABAB] px-1 py-1 rounded w-full mt-1"
+                                className="bg-[#53ABB5] px-1 py-1 rounded w-full mt-1"
                             >
                                 <Text className="text-white text-[9px] font-biorhyme text-center">Set Start Date</Text>
                             </TouchableOpacity>
@@ -212,7 +212,7 @@ export default function DashboardScreen() {
                         Chat anytime, always faithfully connected
                     </Text>
                     <Link href="/(tabs)/chat" asChild>
-                        <TouchableOpacity className="bg-[#A9ABAB] py-2 px-4 rounded transition-all w-full items-center">
+                        <TouchableOpacity className="bg-[#53ABB5] py-2 px-4 rounded transition-all w-full items-center">
                             <Text className="text-white font-biorhyme text-sm">How can I help?</Text>
                         </TouchableOpacity>
                     </Link>
@@ -234,7 +234,7 @@ export default function DashboardScreen() {
                         Your triumphs celebrated, your disappointments discussed, supporting your reflection and review
                     </Text>
                     <Link href="/(tabs)/journal" asChild>
-                        <TouchableOpacity className="bg-[#A9ABAB] py-2 px-4 rounded transition-all w-full items-center">
+                        <TouchableOpacity className="bg-[#53ABB5] py-2 px-4 rounded transition-all w-full items-center">
                             <Text className="text-white font-biorhyme text-sm">Update Journal</Text>
                         </TouchableOpacity>
                     </Link>
@@ -256,7 +256,7 @@ export default function DashboardScreen() {
                         Developing your Intuition with daily exercises to trust your gut and make positive choices
                     </Text>
                     <Link href="/(tabs)/training" asChild>
-                        <TouchableOpacity className="bg-[#A9ABAB] py-2 px-4 rounded transition-all w-full items-center">
+                        <TouchableOpacity className="bg-[#53ABB5] py-2 px-4 rounded transition-all w-full items-center">
                             <Text className="text-white font-biorhyme text-sm">Explore</Text>
                         </TouchableOpacity>
                     </Link>
@@ -293,7 +293,7 @@ export default function DashboardScreen() {
                     </View>
                     <TouchableOpacity
                         onPress={() => setIdeaModalVisible(true)}
-                        className="bg-[#A9ABAB] py-2 px-4 rounded transition-all w-full items-center"
+                        className="bg-[#53ABB5] py-2 px-4 rounded transition-all w-full items-center"
                     >
                         <Text className="text-white font-biorhyme text-sm">Share Your Idea</Text>
                     </TouchableOpacity>
@@ -311,14 +311,14 @@ export default function DashboardScreen() {
                     <View>
                         <TouchableOpacity
                             onPress={handleShare}
-                            className="bg-[#A9ABAB] py-2 px-4 rounded transition-all w-full items-center flex-row justify-center mb-2"
+                            className="bg-[#53ABB5] py-2 px-4 rounded transition-all w-full items-center flex-row justify-center mb-2"
                         >
                             <Copy size={16} color="white" className="mr-2" />
                             <Text className="text-white font-biorhyme text-sm">Copy Link</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={handleShare}
-                            className="bg-[#A9ABAB] py-2 px-4 rounded transition-all w-full items-center"
+                            className="bg-[#53ABB5] py-2 px-4 rounded transition-all w-full items-center"
                         >
                             <Text className="text-white font-biorhyme text-sm">Share via SMS</Text>
                         </TouchableOpacity>
@@ -335,7 +335,7 @@ export default function DashboardScreen() {
                 <Text className="text-xs text-gray-700 text-center font-questrial px-4 mb-2 leading-relaxed max-w-3xl">
                     {currentFact}
                 </Text>
-                <TouchableOpacity onPress={() => Linking.openURL('https://www.anchoredbygrace.online')} className="bg-[#A9ABAB] py-2 px-6 rounded transition-all hover:bg-[#F6CEA7]">
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.anchoredbygrace.online')} className="bg-[#53ABB5] py-2 px-6 rounded transition-all hover:bg-[#F6CEA7]">
                     <Text className="text-white font-biorhyme text-xs">Learn More</Text>
                 </TouchableOpacity>
             </View>
@@ -369,7 +369,7 @@ export default function DashboardScreen() {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={saveStartDate}
-                                className="bg-[#A9ABAB] px-6 py-2 rounded"
+                                className="bg-[#53ABB5] px-6 py-2 rounded"
                             >
                                 <Text className="text-white font-biorhyme">Save</Text>
                             </TouchableOpacity>

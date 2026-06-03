@@ -93,7 +93,7 @@ export default function TrainingScreen() {
                         </View>
 
                         <Link href={`/training/${module.id}`} asChild>
-                            <TouchableOpacity className="bg-[#A9ABAB] py-4 rounded-sm items-center shadow-sm">
+                            <TouchableOpacity className="bg-[#53ABB5] py-4 rounded-sm items-center shadow-sm">
                                 <Text className="text-white font-biorhyme text-sm">Start Training</Text>
                             </TouchableOpacity>
                         </Link>

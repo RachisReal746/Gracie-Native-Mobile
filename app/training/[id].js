@@ -523,7 +523,7 @@ export default function Module1Screen() {
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push('/(tabs)/journal')}
-                        className="bg-[#A9ABAB] py-3 rounded-full items-center"
+                        className="bg-[#53ABB5] py-3 rounded-full items-center"
                     >
                         <Text className="text-white font-biorhyme text-sm">Reflect in Journal</Text>
                     </TouchableOpacity>

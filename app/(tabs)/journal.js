@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, useWindowDimensions } from 'react-native';
 import { Save, BookOpen, MessageCircle, Sparkles } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,6 +40,10 @@ export default function JournalScreen() {
         };
         initialize();
     }, []);
+
+    // Dynamic editor height based on window size
+    const { height: windowHeight } = useWindowDimensions();
+    const editorHeight = Math.max(160, Math.floor(windowHeight * 0.35));
 
     const loadUser = async () => {
         try {
@@ -161,7 +165,7 @@ export default function JournalScreen() {
         <ScrollView className="flex-1 bg-[#E9ECEF] p-4">
             {/* Header Banner */}
             <View className="bg-primary rounded-lg p-6 mb-6 shadow-sm mt-8 relative overflow-hidden">
-                <View className="flex-1 pr-20">
+                <View className="flex-1 pr-6">
                     <Text className="text-white text-2xl font-shadows mb-1">Interactive Smart Journal</Text>
                     <Text className="text-white text-sm font-questrial opacity-90">
                         This is your space to work through the tough stuff. Write freely, Gracie helps you notice what matters, without judgement.
@@ -169,7 +173,7 @@ export default function JournalScreen() {
                 </View>
                 <Image
                     source={require('../../assets/journal_transparent.png')}
-                    className="absolute -right-4 -bottom-4 w-32 h-32 opacity-30"
+                    className="absolute right-0 bottom-0 w-24 h-24 opacity-30"
                     resizeMode="contain"
                 />
             </View>
@@ -196,14 +200,15 @@ export default function JournalScreen() {
                     value={currentEntry}
                     onChangeText={setCurrentEntry}
                     placeholder="Write what's true right now—no fixing, no filtering"
-                    className="bg-white border border-gray-300 rounded-lg p-4 h-80 font-questrial text-sm"
+                    className="bg-white border border-gray-300 rounded-lg p-4 font-questrial text-sm"
                     multiline
                     textAlignVertical="top"
+                    style={{ height: editorHeight }}
                 />
                 <TouchableOpacity
                     onPress={handleSaveEntry}
                     disabled={isLoading || !currentEntry.trim()}
-                    className={`bg-[#A9ABAB] mt-6 py-4 rounded-sm flex-row justify-center items-center shadow-sm ${isLoading ? 'opacity-50' : ''}`}
+                    className={`bg-[#53ABB5] mt-6 py-4 rounded-sm flex-row justify-center items-center shadow-sm ${isLoading ? 'opacity-50' : ''}`}
                 >
                     {isLoading ? <ActivityIndicator size="small" color="white" /> : (
                         <>

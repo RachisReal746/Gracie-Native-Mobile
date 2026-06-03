@@ -149,13 +149,13 @@ export default function HomeScreen() {
                         <View className="flex-row gap-3">
                             <TouchableOpacity
                                 onPress={() => setLoginModalVisible(true)}
-                                className="px-6 py-2 bg-[#A9ABAB] rounded w-28 h-10 items-center justify-center"
+                                className="px-6 py-2 bg-[#53ABB5] rounded w-28 h-10 items-center justify-center"
                             >
                                 <Text className="text-white text-xs font-biorhyme">Log In</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setSignupModalVisible(true)}
-                                className="px-6 py-2 bg-[#A9ABAB] rounded w-26 h-10 items-center justify-center"
+                                className="px-6 py-2 bg-[#53ABB5] rounded w-26 h-10 items-center justify-center"
                             >
                                 <Text className="text-white text-xs font-biorhyme">Sign Up</Text>
                             </TouchableOpacity>

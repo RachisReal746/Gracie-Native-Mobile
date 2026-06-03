@@ -26,7 +26,6 @@
       },
       "package": "com.anchoredbygrace.gracie",
       "permissions": [
-        "INTERNET",
         "INTERNET"
       ]
     },
@@ -48,16 +47,14 @@
       ]
     ],
     "extra": {
+      "API_URL": "https://gracie-backend.onrender.com",
       "router": {},
       "eas": {
-        "projectId": "32e82fed-6a3c-418c-aad7-f4228d70c472"
+        "projectId": "5a7de69e-8819-41fb-b830-6e501413ff46"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/32e82fed-6a3c-418c-aad7-f4228d70c472"
     },
     "owner": "rachisreal777"
   }

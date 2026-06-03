@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
-import { Send, Loader, Download, ChevronDown, ChevronUp, RefreshCw, Trash2 } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Modal } from 'react-native';
+import { Send, Loader, Download, ChevronDown, ChevronUp, RefreshCw, Trash2, X } from 'lucide-react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://192.168.0.20:3000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://gracie-backend.onrender.com';
 
 export default function ChatScreen() {
     const [messages, setMessages] = useState([]);
@@ -13,6 +13,9 @@ export default function ChatScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [user, setUser] = useState(null);
     const [hasStarted, setHasStarted] = useState(false);
+    const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+    const [userConsented, setUserConsented] = useState(false);
+    const [sessionId, setSessionId] = useState(null);
     const scrollViewRef = useRef(null);
 
     const promptSets = [
@@ -56,29 +59,40 @@ export default function ChatScreen() {
             }
             setUser(currentUser);
 
-            const savedHistory = await AsyncStorage.getItem('chatHistory');
-            if (savedHistory) {
-                const history = JSON.parse(savedHistory);
+            // load existing local session id if present
+            const storedSession = await AsyncStorage.getItem('chat_session_id');
+            if (storedSession) setSessionId(storedSession);
 
-                // Add a welcome back message if the last message was a while ago
+            // Check if this is the first time accessing chat
+            const chatWelcomeShown = await AsyncStorage.getItem('chatWelcomeShown');
+            const savedHistory = await AsyncStorage.getItem('chatHistory');
+
+            if (!chatWelcomeShown) {
+                setShowWelcomePopup(true);
+                await AsyncStorage.setItem('chatWelcomeShown', 'true');
+                setMessages([]);
+            } else if (savedHistory) {
+                // Returning user with saved history
+                const history = JSON.parse(savedHistory);
+                setUserConsented(true);
                 const welcomeBackMessage = {
                     id: Date.now(),
                     sender: 'gracie',
-                    text: `Welcome back, ${currentUser.name || 'Friend'}! I've missed our connection. Should we pick up where we left off?`,
+                    text: `Hi ${currentUser.name || 'Friend'}, welcome back, how can I help?`,
                     timestamp: new Date().toISOString(),
                 };
-
                 const finalMessages = [...history, welcomeBackMessage];
                 setMessages(finalMessages);
                 setHasStarted(true);
-            } else {
-                const introMessage = {
+            } else if (chatWelcomeShown) {
+                // Returning user with no saved history
+                const welcomeBackMessage = {
                     id: Date.now(),
                     sender: 'gracie',
-                    text: `Hi ${currentUser.name || 'Friend'}! I'm Gracie, your faithful therapy trained chat support. We can talk anytime, I'm still here even at 3am or when you're feeling lonely. I will never judge or make you feel guilt or shame and I promise to keep your secrets. Is that ok?`,
+                    text: `Hi ${currentUser.name || 'Friend'}, welcome back, how can I help?`,
                     timestamp: new Date().toISOString(),
                 };
-                setMessages([introMessage]);
+                setMessages([welcomeBackMessage]);
             }
         } catch (e) {
             console.error(e);
@@ -88,32 +102,53 @@ export default function ChatScreen() {
     const clearChat = async () => {
         try {
             await AsyncStorage.removeItem('chatHistory');
+            await AsyncStorage.removeItem('chat_session_id');
+            setSessionId(null);
             setMessages([]);
             setHasStarted(false);
 
-            // Re-load to get original intro message
+            // Re-load to get welcome back message
             const userStr = await AsyncStorage.getItem('user');
             const currentUser = userStr ? JSON.parse(userStr) : { name: 'Friend' };
 
-            const introMessage = {
+            const welcomeBackMessage = {
                 id: Date.now(),
                 sender: 'gracie',
-                text: `Hi ${currentUser.name || 'Friend'}! I'm Gracie, your faithful therapy trained chat support. We can talk anytime, I'm still here even at 3am or when you're feeling lonely. I will never judge or make you feel guilt or shame and I promise to keep your secrets. Is that ok?`,
+                text: `Hi ${currentUser.name || 'Friend'}, welcome back, how can I help?`,
                 timestamp: new Date().toISOString(),
             };
-            setMessages([introMessage]);
+            setMessages([welcomeBackMessage]);
             scrollViewRef.current?.scrollTo({ y: 0, animated: true });
         } catch (e) {
             console.error('Error clearing chat:', e);
         }
     };
 
+    const generateSessionId = () => 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+
+    const beginChat = async () => {
+        try {
+            await AsyncStorage.removeItem('chatHistory');
+            const newSession = generateSessionId();
+            await AsyncStorage.setItem('chat_session_id', newSession);
+            setSessionId(newSession);
+            setMessages([]);
+            setHasStarted(true);
+            setShowWelcomePopup(false);
+        } catch (e) {
+            console.error('Error beginning chat:', e);
+        }
+    }
+
     const handleSendMessage = async (text = inputMessage) => {
         if (!text.trim()) return;
 
-        // If this is the starting point, maybe clear any old baggage first
-        if (!hasStarted && text === 'Let\'s begin') {
-            await AsyncStorage.removeItem('chatHistory');
+        // Ensure we have an active session id
+        let activeSession = sessionId;
+        if (!activeSession) {
+            activeSession = generateSessionId();
+            await AsyncStorage.setItem('chat_session_id', activeSession);
+            setSessionId(activeSession);
         }
 
         const userMessage = {
@@ -131,25 +166,40 @@ export default function ChatScreen() {
 
         try {
             const token = await AsyncStorage.getItem('authToken');
-            const response = await axios.post(`${API_URL}/api/chat/message`, {
-                message: text,
-                user_id: user?.id,
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const payload = { message: text, user_id: user?.id, session_id: activeSession };
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            console.debug('Chat request:', { url: `${API_URL}/api/chat/message`, payload, headers });
+            const response = await axios.post(`${API_URL}/api/chat/message`, payload, { headers });
+            console.debug('Chat response:', { status: response.status, data: response.data });
 
             const gracieMessage = {
                 id: Date.now() + 1,
                 sender: 'gracie',
-                text: response.data.response,
+                text: response.data?.response || "Sorry, I couldn't generate a reply right now.",
                 timestamp: new Date().toISOString(),
             };
 
             const finalMessages = [...newMessages, gracieMessage];
             setMessages(finalMessages);
-            await AsyncStorage.setItem('chatHistory', JSON.stringify(finalMessages));
+            if (userConsented) {
+                await AsyncStorage.setItem('chatHistory', JSON.stringify(finalMessages));
+            }
         } catch (error) {
             console.error('Chat error:', error);
+            if (error.response) {
+                console.error('Axios response error:', {
+                    status: error.response.status,
+                    data: error.response.data,
+                    headers: error.response.headers,
+                });
+            } else if (error.request) {
+                console.error('No response received, request info:', error.request);
+            } else {
+                console.error('Error message:', error.message);
+            }
+            console.error('Axios config:', error.config);
+
             const errorMessage = {
                 id: Date.now() + 1,
                 sender: 'gracie',
@@ -164,6 +214,50 @@ export default function ChatScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+            {/* Welcome Popup Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showWelcomePopup}
+                onRequestClose={() => setShowWelcomePopup(false)}
+            >
+                <View className="flex-1 justify-center items-center bg-black/50 p-4">
+                    <View className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-xl font-shadows text-primary flex-1">Welcome!</Text>
+                            <TouchableOpacity onPress={() => setShowWelcomePopup(false)}>
+                                <X size={24} color="#53ABB5" />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <Text className="text-base font-questrial text-gray-800 leading-relaxed mb-6">
+                            Hi <Text className="font-bold">{user?.name || 'Friend'}</Text>, I'm Gracie, your faithful therapy trained chat support. We can talk anytime, I'm still here even at 3am or when you're feeling lonely. I will never judge or make you feel guilt or shame and I promise to keep your secrets. Is that ok?
+                        </Text>
+                        
+                        <View className="flex-row gap-3">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setUserConsented(false);
+                                    setShowWelcomePopup(false);
+                                }}
+                                className="flex-1 py-3 rounded-full items-center border-2 border-primary"
+                            >
+                                <Text className="text-primary font-biorhyme text-base">No</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setUserConsented(true);
+                                    setShowWelcomePopup(false);
+                                }}
+                                className="flex-1 bg-primary py-3 rounded-full items-center"
+                            >
+                                <Text className="text-white font-biorhyme text-base">Yes</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
                 style={{ flex: 1 }}
@@ -208,9 +302,9 @@ export default function ChatScreen() {
                             </View>
                             <TouchableOpacity
                                 onPress={() => handleSendMessage('Let\'s begin')}
-                                className="bg-[#A9ABAB]/10 py-2 px-6 self-start rounded-full border border-[#A9ABAB]/20"
+                                className="bg-[#53ABB5]/10 py-2 px-6 self-start rounded-full border border-[#53ABB5]/20"
                             >
-                                <Text className="text-[#A9ABAB] font-biorhyme text-[11px]">Begin Chat</Text>
+                                <Text className="text-[#53ABB5] font-biorhyme text-[11px]">Begin Chat</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -261,7 +355,7 @@ export default function ChatScreen() {
                         <TouchableOpacity
                             onPress={() => handleSendMessage()}
                             disabled={isLoading || !inputMessage.trim()}
-                            className={`bg-[#A9ABAB] w-11 h-11 items-center justify-center rounded-full shadow-sm ${isLoading ? 'opacity-50' : ''}`}
+                            className={`bg-[#53ABB5] w-11 h-11 items-center justify-center rounded-full shadow-sm ${isLoading ? 'opacity-50' : ''}`}
                         >
                             <Send size={18} color="white" />
                         </TouchableOpacity>
